@@ -244,9 +244,7 @@ class StatusService : Service() {
                 else -> "${fmtSeconds(seconds)} until full charge"
             }.let { baseText ->
             if (indicatorUnits == "%") {
-              "$baseText | Power: ${fmt(snapshot.watts)}W"  // Append power when showing percentage
-            } else {
-             baseText
+              "$baseText | Power: ${fmt(snapshot.watts)}W"
             }
         )
 
