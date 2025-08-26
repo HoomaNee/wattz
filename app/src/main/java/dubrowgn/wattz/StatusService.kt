@@ -66,7 +66,7 @@ class StatusService : Service() {
             NotificationChannel(
                 noteChannelId,
                 "Power Status",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Continuously displays current battery power consumption"
             }
@@ -218,6 +218,7 @@ class StatusService : Service() {
         })
         val txtUnits = when (indicatorUnits) {
             "C" -> "°C"
+            "%" -> ""
             else -> indicatorUnits ?: "W"
         }
 
