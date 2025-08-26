@@ -66,7 +66,7 @@ class StatusService : Service() {
             NotificationChannel(
                 noteChannelId,
                 "Power Status",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_HIGH //Notification priority set high
             ).apply {
                 description = "Continuously displays current battery power consumption"
             }
@@ -87,6 +87,7 @@ class StatusService : Service() {
             .setSmallIcon(renderIcon(ind, "W"))
             .setContentIntent(noteIntent)
             .setOnlyAlertOnce(true)
+            .setPriority(Notification.PRIORITY_MAX)  // Added to maximize notification priority
 
         registerReceiver(
             MsgReceiver(),
@@ -146,7 +147,7 @@ class StatusService : Service() {
         
         if (unit.isEmpty()) {
         // Center the number vertically for percentage in center
-        paint.textSize = 28f * density
+        paint.textSize = 36f * density //Increase icon size
         val yPos = (w / 2f) + (paint.textSize / 2f) - paint.descent() / 2f  // Center vertically
         canvas.drawText(value, w / 2f, yPos, paint)
     } else {
