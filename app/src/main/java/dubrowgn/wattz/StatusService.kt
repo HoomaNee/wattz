@@ -143,9 +143,18 @@ class StatusService : Service() {
         paint.style = Paint.Style.FILL
         paint.color = Color.WHITE
         paint.textAlign = Paint.Align.CENTER
-
+        
+        if (unit.isEmpty()) {
+        // Center the number vertically for percentage in center
+        paint.textSize = 28f * density
+        val yPos = (w / 2f) + (paint.textSize / 2f) - paint.descent() / 2f  // Center vertically
+        canvas.drawText(value, w / 2f, yPos, paint)
+    } else {
+        // Original logic for other units (value on top, unit on bottom)
+        paint.textSize = 28f * density
         canvas.drawText(value, w / 2f, w / 2f, paint)
         canvas.drawText(unit, w / 2f, w.toFloat(), paint)
+    }
 
         return Icon.createWithBitmap(bitmap)
     }
