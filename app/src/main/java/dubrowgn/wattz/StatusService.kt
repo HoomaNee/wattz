@@ -94,6 +94,7 @@ class StatusService : Service() {
             .setPriority(Notification.PRIORITY_MAX)  // Added to maximize notification priority
             .setOngoing(true)  // Makes the notification non-dismissible and persistent at top
             .setCategory(Notification.CATEGORY_SYSTEM)  // Treats it as a system alert for higher sorting on Samsung
+            .setVisibility(Notification.VISIBILITY_PUBLIC)
 
         registerReceiver(
             MsgReceiver(),
