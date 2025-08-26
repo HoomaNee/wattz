@@ -66,7 +66,7 @@ class StatusService : Service() {
             NotificationChannel(
                 noteChannelId,
                 "Power Status",
-                NotificationManager.IMPORTANCE_HIGH //Notification priority set high
+                NotificationManager.IMPORTANCE_MAX //Notification priority set high
             ).apply {
                 description = "Continuously displays current battery power consumption"
                 setSound(null, null)  // No sound to avoid annoyance, but keeps it urgent
@@ -93,7 +93,7 @@ class StatusService : Service() {
             .setOnlyAlertOnce(true)
             .setPriority(Notification.PRIORITY_MAX)  // Added to maximize notification priority
             .setOngoing(true)  // Makes the notification non-dismissible and persistent at top
-            .setCategory(Notification.CATEGORY_SYSTEM)  // Treats it as a system alert for higher sorting on Samsung
+            .setCategory(Notification.CATEGORY_SERVICE)  // Treats it as a system alert for higher sorting on Samsung
             .setVisibility(Notification.VISIBILITY_PUBLIC)
 
         registerReceiver(
@@ -154,7 +154,7 @@ class StatusService : Service() {
         
         if (unit.isEmpty()) {
         // Center the number vertically for percentage in center
-        paint.textSize = 42f * density //Increase icon size
+        paint.textSize = 45f * density //Increase icon size
         val yPos = (w / 2f) + (paint.textSize / 2f) - paint.descent() / 2f  // Center vertically
         canvas.drawText(value, w / 2f, yPos, paint)
     } else {
