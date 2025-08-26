@@ -69,7 +69,12 @@ class StatusService : Service() {
                 NotificationManager.IMPORTANCE_HIGH //Notification priority set high
             ).apply {
                 description = "Continuously displays current battery power consumption"
+                setSound(null, null)  // No sound to avoid annoyance, but keeps it urgent
+                enableLights(false)  // Optional: Disable lights if not needed
+                setShowBadge(true)  // Enables notification dot/badge for visibility
+                enableVibration(false)  // Avoid vibration to keep it subtle yet top-placed
             }
+            noteMgr.createNotificationChannel(channel)  // Use the full channel object for extra flags
         )
 
         val noteIntent = PendingIntent.getActivity(
@@ -88,6 +93,8 @@ class StatusService : Service() {
             .setContentIntent(noteIntent)
             .setOnlyAlertOnce(true)
             .setPriority(Notification.PRIORITY_MAX)  // Added to maximize notification priority
+            .setOngoing(true)  // Makes the notification non-dismissible and persistent at top
+            .setCategory(Notification.CATEGORY_SYSTEM)  // Treats it as a system alert for higher sorting on Samsung
 
         registerReceiver(
             MsgReceiver(),
