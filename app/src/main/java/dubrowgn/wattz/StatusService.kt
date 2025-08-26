@@ -86,10 +86,9 @@ class StatusService : Service() {
             .setContentTitle("Battery Draw: $ind W")
             .setSmallIcon(renderIcon(ind, "W"))
             .setContentIntent(noteIntent)
+            .setOnlyAlertOnce(true)
             .setPriority(Notification.PRIORITY_HIGH)  // Added to maximize notification priority
             .setOngoing(true)  // Makes the notification non-dismissible and persistent at top
-            .setCategory(Notification.CATEGORY_SERVICE)  // Treats it as a system alert for higher sorting on Samsung
-            .setVisibility(Notification.VISIBILITY_PUBLIC)
 
         registerReceiver(
             MsgReceiver(),
@@ -243,6 +242,10 @@ class StatusService : Service() {
                 null -> ""
                 0.0 -> "fully charged"
                 else -> "${fmtSeconds(seconds)} until full charge"
+            }
+            if (indicatorUnits == "%") {
+            val powerText = " | Power: ${fmt(snapshot.watts)}W"
+                contentText += powerText
             }
         )
 
