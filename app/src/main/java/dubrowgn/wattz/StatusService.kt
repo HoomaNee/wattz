@@ -74,7 +74,6 @@ class StatusService : Service() {
                 setShowBadge(true)  // Enables notification dot/badge for visibility
                 enableVibration(false)  // Avoid vibration to keep it subtle yet top-placed
             }
-            noteMgr.createNotificationChannel(channel)  // Use the full channel object for extra flags
         )
 
         val noteIntent = PendingIntent.getActivity(
