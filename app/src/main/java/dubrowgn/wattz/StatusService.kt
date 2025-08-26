@@ -66,13 +66,9 @@ class StatusService : Service() {
             NotificationChannel(
                 noteChannelId,
                 "Power Status",
-                NotificationManager.IMPORTANCE_MAX //Notification priority set high
+                NotificationManager.IMPORTANCE_HIGH //Notification priority set high
             ).apply {
                 description = "Continuously displays current battery power consumption"
-                setSound(null, null)  // No sound to avoid annoyance, but keeps it urgent
-                enableLights(false)  // Optional: Disable lights if not needed
-                setShowBadge(true)  // Enables notification dot/badge for visibility
-                enableVibration(false)  // Avoid vibration to keep it subtle yet top-placed
             }
         )
 
@@ -90,8 +86,7 @@ class StatusService : Service() {
             .setContentTitle("Battery Draw: $ind W")
             .setSmallIcon(renderIcon(ind, "W"))
             .setContentIntent(noteIntent)
-            .setOnlyAlertOnce(true)
-            .setPriority(Notification.PRIORITY_MAX)  // Added to maximize notification priority
+            .setPriority(Notification.PRIORITY_HIGH)  // Added to maximize notification priority
             .setOngoing(true)  // Makes the notification non-dismissible and persistent at top
             .setCategory(Notification.CATEGORY_SERVICE)  // Treats it as a system alert for higher sorting on Samsung
             .setVisibility(Notification.VISIBILITY_PUBLIC)
