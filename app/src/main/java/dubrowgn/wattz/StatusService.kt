@@ -242,10 +242,11 @@ class StatusService : Service() {
                 null -> ""
                 0.0 -> "fully charged"
                 else -> "${fmtSeconds(seconds)} until full charge"
-            }
+            }.let { baseText ->
             if (indicatorUnits == "%") {
-            val powerText = " | Power: ${fmt(snapshot.watts)}W"
-                contentText += powerText
+              "$baseText | Power: ${fmt(snapshot.watts)}W"  // Append power when showing percentage
+            } else {
+             baseText
             }
         )
 
