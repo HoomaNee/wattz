@@ -153,7 +153,7 @@ class StatusService : Service() {
         
         if (unit.isEmpty()) {
         // Center the number vertically for percentage in center
-        paint.textSize = 36f * density //Increase icon size
+        paint.textSize = 42f * density //Increase icon size
         val yPos = (w / 2f) + (paint.textSize / 2f) - paint.descent() / 2f  // Center vertically
         canvas.drawText(value, w / 2f, yPos, paint)
     } else {
