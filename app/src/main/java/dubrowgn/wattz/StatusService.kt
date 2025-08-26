@@ -242,9 +242,6 @@ class StatusService : Service() {
                 null -> ""
                 0.0 -> "fully charged"
                 else -> "${fmtSeconds(seconds)} until full charge"
-            }.let { baseText ->
-            if (indicatorUnits == "%") {
-              "$baseText | Power: ${fmt(snapshot.watts)}W"
             }
         )
 
