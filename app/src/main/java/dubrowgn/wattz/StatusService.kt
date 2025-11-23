@@ -215,7 +215,7 @@ class StatusService : Service() {
             "C" -> getString(R.string.temperature)
             "V" -> getString(R.string.voltage)
             "Wh" -> getString(R.string.energy)
-            "%" -> "Level"
+            "%" -> "B.L."
             else -> getString(R.string.power)
         }
         val txtValue = fmt( when (indicatorUnits) {
@@ -228,19 +228,20 @@ class StatusService : Service() {
             else -> snapshot.watts
         })
         val txtUnits = when (indicatorUnits) {
-            "C" -> "°C"
+            "C" -> ""
+            "Wh" -> ""
             "%" -> ""
             else -> indicatorUnits ?: "W"
         }
 
         val title = if (indicatorUnits == "%") {
-            "${getString(R.string.battery)} ${txtLabel}: ${txtValue}${txtUnits} (${fmt(snapshot.watts)}W)"
+            "${getString(R.string.battery)} ${txtLabel}: ${txtValue}${txtUnits}% | ${fmt(snapshot.celsius)}°C | ${fmt(snapshot.watts)}W"
         } else {
             "${getString(R.string.battery)} ${txtLabel}: ${txtValue}${txtUnits}"
         }
 
         val iconUnits = if (indicatorUnits == "%") "" else txtUnits
-
+        
         noteBuilder
             .setContentTitle(title)
             .setSmallIcon(renderIcon(txtValue, iconUnits))
