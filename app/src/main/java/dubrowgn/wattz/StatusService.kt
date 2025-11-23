@@ -23,7 +23,10 @@ class StatusService : Service() {
     private var pluggedInAt: ZonedDateTime? = null
     private lateinit var snapshot: BatterySnapshot
     private val task = PeriodicTask({ update() }, intervalMs)
-
+    // % icon cache
+    private var lastPercentIconValue: String? = null
+    private var lastPercentIcon: Icon? = null
+    // % icon cache
     private fun debug(msg: String) {
         Log.d(this::class.java.name, msg)
     }
@@ -160,6 +163,16 @@ class StatusService : Service() {
         
         return Icon.createWithBitmap(bitmap)
     }
+    
+    // % cache icon
+    private fun getPercentIcon(value: String): Icon {
+    if (lastPercentIconValue != value || lastPercentIcon == null) {
+        lastPercentIcon = renderIcon(value, "") // empty unit for %
+        lastPercentIconValue = value
+        }
+        return lastPercentIcon!!
+    }
+    // % cache icon
 
     private fun updateData() {
         val plugType = snapshot.plugType?.name?.lowercase()
@@ -240,11 +253,11 @@ class StatusService : Service() {
             "${getString(R.string.battery)} ${txtLabel}: ${txtValue}${txtUnits}"
         }
 
-        val iconUnits = if (indicatorUnits == "%") "" else txtUnits
+        val iconToUse = if (indicatorUnits == "%") getPercentIcon(txtValue) else renderIcon(txtValue, txtUnits)
         
         noteBuilder
             .setContentTitle(title)
-            .setSmallIcon(renderIcon(txtValue, iconUnits))
+            .setSmallIcon(iconToUse)
 
         noteBuilder.setContentText(
             when(val seconds = snapshot.secondsUntilCharged) {
