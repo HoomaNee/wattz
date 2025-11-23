@@ -1,10 +1,10 @@
 <resources>
     <string name="app_name">Wattz</string>
     <string name="back">Back</string>
-    <string name="battery">Battery</string>
+    <string name="battery">Batt.</string>
     <string name="charging">Charging</string>
     <string name="chargingSince">Charging Since</string>
-    <string name="chargeLevel">Charge Level</string>
+    <string name="chargeLevel">L</string>
     <string name="current">Current</string>
     <string name="energy">Energy</string>
     <string name="fullyCharged">fully charged</string>
