@@ -250,7 +250,7 @@ class StatusService : Service() {
             when(val seconds = snapshot.secondsUntilCharged) {
                 null -> "Heat: ${fmt(snapshot.celsius)}°C | Power: ${fmt(snapshot.watts)}W"
                 0.0 -> "Fully charged! | P: ${fmt(snapshot.watts)}W"
-                else -> "${fmtSeconds(seconds)} Until full! | T:${fmt(snapshot.celsius)}°C | P:${fmt(snapshot.watts)}W"
+                else -> "${fmtSeconds(seconds)} untilFull| T:${fmt(snapshot.celsius)}°C | P:${fmt(snapshot.watts)}W"
             }
         )
 
