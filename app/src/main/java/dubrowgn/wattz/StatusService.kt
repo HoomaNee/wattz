@@ -66,7 +66,7 @@ class StatusService : Service() {
             NotificationChannel(
                 noteChannelId,
                 "Power Status",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_HIGH//Notification priority set high
             ).apply {
                 description = "Continuously displays current battery power consumption"
             }
@@ -87,7 +87,9 @@ class StatusService : Service() {
             .setSmallIcon(renderIcon(ind, "W"))
             .setContentIntent(noteIntent)
             .setOnlyAlertOnce(true)
-
+            .setPriority(Notification.PRIORITY_HIGH)  // Added to maximize notification priority
+            .setOngoing(true)  // Makes the notification non-dismissible and persistent at top
+            
         registerReceiver(
             MsgReceiver(),
             IntentFilter().apply {
@@ -139,14 +141,23 @@ class StatusService : Service() {
         val textSize = 28f * density
         val paint = Paint()
         paint.textSize = textSize
-        paint.typeface = Typeface.DEFAULT_BOLD
+        paint.typeface = Typeface.DEFAULT
         paint.style = Paint.Style.FILL
         paint.color = Color.WHITE
         paint.textAlign = Paint.Align.CENTER
-
+        
+        if (unit.isEmpty()) {
+        // Center the number vertically for percentage in center
+        paint.textSize = 45f * density //Increase icon size 
+        val yPos = (w / 2f) + (paint.textSize / 2f) - paint.descent() / 2f  // Center vertically
+        canvas.drawText(value, w / 2f, yPos, paint)
+          } else {
+        // Original logic for other units (value on top, unit on bottom)
+        paint.textSize = 28f * density
         canvas.drawText(value, w / 2f, w / 2f, paint)
         canvas.drawText(unit, w / 2f, w.toFloat(), paint)
-
+        }
+        
         return Icon.createWithBitmap(bitmap)
     }
 
@@ -204,7 +215,7 @@ class StatusService : Service() {
             "C" -> getString(R.string.temperature)
             "V" -> getString(R.string.voltage)
             "Wh" -> getString(R.string.energy)
-            "%" -> getString(R.string.chargeLevel)
+            "%" -> "Level"
             else -> getString(R.string.power)
         }
         val txtValue = fmt( when (indicatorUnits) {
@@ -218,12 +229,21 @@ class StatusService : Service() {
         })
         val txtUnits = when (indicatorUnits) {
             "C" -> "°C"
+            "%" -> ""
             else -> indicatorUnits ?: "W"
         }
 
+        val title = if (indicatorUnits == "%") {
+            "${getString(R.string.battery)} ${txtLabel}: ${txtValue}${txtUnits} (${fmt(snapshot.watts)}W)"
+        } else {
+            "${getString(R.string.battery)} ${txtLabel}: ${txtValue}${txtUnits}"
+        }
+
+        val iconUnits = if (indicatorUnits == "%") "" else txtUnits
+
         noteBuilder
-            .setContentTitle("${getString(R.string.battery)} ${txtLabel}: ${txtValue}${txtUnits}")
-            .setSmallIcon(renderIcon(txtValue, txtUnits))
+            .setContentTitle(title)
+            .setSmallIcon(renderIcon(txtValue, iconUnits))
 
         noteBuilder.setContentText(
             when(val seconds = snapshot.secondsUntilCharged) {
