@@ -248,8 +248,8 @@ class StatusService : Service() {
 
         noteBuilder.setContentText(
             when(val seconds = snapshot.secondsUntilCharged) {
-                null -> ""
-                0.0 -> "fully charged"
+                null -> "${fmt(snapshot.celsius)}°C | ${fmt(snapshot.watts)}W"
+                0.0 -> "Fully charged!"
                 else -> "${fmtSeconds(seconds)} until full charge"
             }
         )
