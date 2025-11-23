@@ -210,7 +210,7 @@ class StatusService : Service() {
         val normalizedValue = value.trim().let {
             if (it.length > 8) it.substring(0, 8) else it
         }
-        val key = "$cacheVersion|$normalizedValue|\( unit| \){resources.displayMetrics.densityDpi}"
+        val key = "$cacheVersion|$normalizedValue| unit| ${resources.displayMetrics.densityDpi}"
 
         return iconCache.get(key) ?: createIconBitmap(normalizedValue, unit).also { icon ->
         iconCache.put(key, icon)
