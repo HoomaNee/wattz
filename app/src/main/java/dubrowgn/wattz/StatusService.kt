@@ -215,7 +215,7 @@ class StatusService : Service() {
             "C" -> getString(R.string.temperature)
             "V" -> getString(R.string.voltage)
             "Wh" -> getString(R.string.energy)
-            "%" -> "B.L."
+            "%" -> getString(R.string.chargeLevel)
             else -> getString(R.string.power)
         }
         val txtValue = fmt( when (indicatorUnits) {
