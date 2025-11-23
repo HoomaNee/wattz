@@ -235,7 +235,7 @@ class StatusService : Service() {
         }
 
         val title = if (indicatorUnits == "%") {
-            "${getString(R.string.battery)} ${txtLabel}: ${txtValue}${txtUnits}% | ${fmt(snapshot.celsius)}°C | ${fmt(snapshot.watts)}W"
+            "${getString(R.string.battery)} ${txtLabel}: ${txtValue}${txtUnits}%"
         } else {
             "${getString(R.string.battery)} ${txtLabel}: ${txtValue}${txtUnits}"
         }
@@ -248,9 +248,9 @@ class StatusService : Service() {
 
         noteBuilder.setContentText(
             when(val seconds = snapshot.secondsUntilCharged) {
-                null -> "${fmt(snapshot.celsius)}°C | ${fmt(snapshot.watts)}W"
-                0.0 -> "Fully charged!"
-                else -> "${fmtSeconds(seconds)} until full charge"
+                null -> "Heat: ${fmt(snapshot.celsius)}°C | Power: ${fmt(snapshot.watts)}W"
+                0.0 -> "Fully charged! | P: ${fmt(snapshot.watts)}W"
+                else -> "${fmtSeconds(seconds)} Until full! | T:${fmt(snapshot.celsius)}°C | P:${fmt(snapshot.watts)}W"
             }
         )
 
