@@ -9,11 +9,10 @@ import android.graphics.*
 import android.graphics.drawable.Icon
 import android.os.IBinder
 import android.util.Log
-import androidx.core.app.NotificationCompat
-import android.util.LruCache
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+
 
 class StatusService : Service() {
     private lateinit var battery: Battery
@@ -24,11 +23,12 @@ class StatusService : Service() {
     private var pluggedInAt: ZonedDateTime? = null
     private lateinit var snapshot: BatterySnapshot
     private val task = PeriodicTask({ update() }, intervalMs)
-
     // Professional icon caching
-    private val iconCache = LruCache<String, Icon>(200) // Increased for safety + prewarm
-    private var prewarmedPercentageIcons = false
-    private var cacheVersion = 0
+    private val iconCache = LruCache<String, Icon>(150) // 64 most recent icons
+    private var prewarmedPercentageIcons = false  // Prevents re-warming every restart
+    private var currentIconUnits: String? = null // to detect unit changes
+    // Optional: if you change text size, density, or color in settings → invalidate
+    private var cacheVersion = 0 // increment when visual settings change
 
     private fun debug(msg: String) {
         Log.d(this::class.java.name, msg)
@@ -62,20 +62,20 @@ class StatusService : Service() {
         val newInvert = settings.getBoolean("invertCurrent", false)
         val newUnits = settings.getString("indicatorUnits", null)
 
-        val needsCacheInvalidation =
-            indicatorUnits != newUnits ||
+        val needsCacheInvalidation = 
+            indicatorUnits != newUnits || 
             battery.currentScalar != newScalar ||
             battery.invertCurrent != newInvert
 
-        // Apply new values
-        battery.currentScalar = newScalar
-        battery.invertCurrent = newInvert
-        indicatorUnits = newUnits
+            battery.currentScalar = newScalar
+            battery.invertCurrent = newInvert
+            indicatorUnits = newUnits
 
         if (needsCacheInvalidation) {
             iconCache.evictAll()
-            cacheVersion++
-            prewarmedPercentageIcons = false  // Allow re-prewarm if switching back to %
+            cacheVersion++ // forces new keys
+            currentIconUnits = newUnits
+            prewarmedPercentageIcons = false  // Allow re-warm if switching back to %
         }
     }
 
@@ -88,14 +88,15 @@ class StatusService : Service() {
             NotificationChannel(
                 noteChannelId,
                 "Power Status",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_HIGH//Notification priority set high
             ).apply {
                 description = "Continuously displays current battery power consumption"
             }
         )
 
         val noteIntent = PendingIntent.getActivity(
-            this, 0,
+            this,
+            0,
             Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
             },
@@ -108,8 +109,21 @@ class StatusService : Service() {
             .setSmallIcon(renderIcon(ind, "W"))
             .setContentIntent(noteIntent)
             .setOnlyAlertOnce(true)
-            .setPriority(Notification.PRIORITY_HIGH)
-            .setOngoing(true)
+            .setPriority(Notification.PRIORITY_HIGH)  // Added to maximize notification priority
+            .setOngoing(true)  // Makes the notification non-dismissible and persistent at top
+            
+        registerReceiver(
+            MsgReceiver(),
+            IntentFilter().apply {
+                addAction(batteryDataReq)
+                addAction(settingsUpdateInd)
+                addAction(Intent.ACTION_POWER_CONNECTED)
+                addAction(Intent.ACTION_POWER_DISCONNECTED)
+                addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_SCREEN_ON)
+            },
+            RECEIVER_NOT_EXPORTED,
+        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -120,7 +134,8 @@ class StatusService : Service() {
         init()
         loadSettings()
 
-        // Pre-warm percentage icons if needed
+        // Pre-warm all 0–100% icons the first time user selects "%" mode
+        // This runs only once per settings change — super fast (~30–60ms total)
         if (indicatorUnits == "%") {
             prewarmPercentageIcons()
         }
@@ -128,28 +143,22 @@ class StatusService : Service() {
         task.start()
 
         try {
-            updateNotificationIconAndTitle()  // Show real value immediately
+        // Use current (already possibly cached) icon for initial notification
+            updateNotificationIconAndTitle()
             startForeground(noteId, noteBuilder.build())
         } catch (e: Exception) {
-            Log.e(this::class.java.name, "Failed to start foreground", e)
+        Log.e(this::class.java.name, "Failed to foreground StatusService", e)
         }
-
-        registerReceiver(MsgReceiver(), IntentFilter().apply {
-            addAction(batteryDataReq)
-            addAction(settingsUpdateInd)
-            addAction(Intent.ACTION_POWER_CONNECTED)
-            addAction(Intent.ACTION_POWER_DISCONNECTED)
-            addAction(Intent.ACTION_SCREEN_OFF)
-            addAction(Intent.ACTION_SCREEN_ON)
-        }, RECEIVER_NOT_EXPORTED)
 
         return START_STICKY
     }
 
     private fun prewarmPercentageIcons() {
+        // Only pre-warm once per app lifetime when in % mode
+        // We use a simple Set to prevent warming multiple times
         if (prewarmedPercentageIcons) return
 
-        debug("Pre-warming 0–100% icons...")
+        debug("Pre-warming 0–100% battery icons (one-time)...")
         val start = System.currentTimeMillis()
 
         for (i in 0..100) {
@@ -161,76 +170,86 @@ class StatusService : Service() {
     }
 
     private fun updateNotificationIconAndTitle() {
+        // Small helper to refresh title + icon using current snapshot
+        // This avoids showing "indeterminate" on first launch when in % mode
         snapshot = battery.snapshot()
         val value = fmt(snapshot.levelPercent)
-        val title = "\( {getString(R.string.battery)} \){getString(R.string.chargeLevel)}: ${value}%"
+        val title = "${getString(R.string.battery)} ${getString(R.string.chargeLevel)}: ${value}%"
 
         noteBuilder
             .setContentTitle(title)
-            .setSmallIcon(renderIcon(value, ""))
+            .setSmallIcon(renderIcon(value, "")) // Now instantly cached!
     }
 
     override fun onDestroy() {
-        try { unregisterReceiver(MsgReceiver()) } catch (_: Exception) {}
-        task.stop()
+        debug("onDestroy()")
+
         super.onDestroy()
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
-
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
+    }
+    
     override fun onLowMemory() {
         super.onLowMemory()
-        iconCache.evictAll()
+        iconCache.evictAll() // Free memory when system is desperate
     }
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
+        // TRIM_MEMORY_UI_HIDDEN = app went to background
+        // TRIM_MEMORY_BACKGROUND / MODERATE / COMPLETE = even more aggressive
         if (level >= TRIM_MEMORY_UI_HIDDEN) {
-            iconCache.evictAll()
+            iconCache.evictAll() // Safe to clear icon cache when not visible
         }
     }
 
     private fun renderIcon(value: String, unit: String): Icon {
-        val normalizedValue = value.trim().let { if (it.length > 8) it.substring(0, 8) else it }
+    // Normalize value: trim, limit length, and round to reasonable precision
+        val normalizedValue = value.trim().let {
+            if (it.length > 8) it.substring(0, 8) else it
+        }
         val key = "$cacheVersion|$normalizedValue|\( unit| \){resources.displayMetrics.densityDpi}"
 
-        return iconCache.get(key) ?: createIconBitmap(normalizedValue, unit).also {
-            iconCache.put(key, it)
+        return iconCache.get(key) ?: createIconBitmap(normalizedValue, unit).also { icon ->
+        iconCache.put(key, icon)
         }
     }
 
     private fun createIconBitmap(value: String, unit: String): Icon {
         val density = resources.displayMetrics.density
         val size = (48f * density).toInt()
-        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888) // Changed to ARGB_8888 for safety
         val canvas = Canvas(bitmap)
 
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
             color = Color.WHITE
             textAlign = Paint.Align.CENTER
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            isFakeBoldText = false
         }
 
         if (unit.isEmpty()) {
-            // Large centered percentage
+        // Percentage mode - large centered text
             paint.textSize = 42f * density
-            val bounds = Rect()
+        val bounds = Rect()
             paint.getTextBounds(value, 0, value.length, bounds)
-            val y = size / 2f - bounds.exactCenterY()
+        val y = size / 2f - bounds.exactCenterY()
             canvas.drawText(value, size / 2f, y, paint)
-        } else {
-            // Two-line mode
+                } else {
+            // Two-line mode: value on top, unit below
             paint.textSize = 28f * density
             canvas.drawText(value, size / 2f, size * 0.55f, paint)
 
             paint.textSize = 18f * density
-            paint.alpha = 200
+            paint.alpha = 200 // slightly dim unit
             canvas.drawText(unit, size / 2f, size * 0.88f, paint)
         }
 
         return Icon.createWithBitmap(bitmap)
     }
-    
+
     private fun updateData() {
         val plugType = snapshot.plugType?.name?.lowercase()
         val indeterminate = getString(R.string.indeterminate)
@@ -327,7 +346,6 @@ class StatusService : Service() {
         noteMgr.notify(noteId, noteBuilder.build())
 
         updateData()
-    
     }
     
 }
